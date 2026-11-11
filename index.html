@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0c10" />
+    <title>Model Vault — GLB Viewer</title>
+    <meta
+      name="description"
+      content="A local 3D viewer for every GLB asset in the repository. Orbit, inspect, and play animations."
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/three.module.js",
+          "three/addons/": "./vendor/three/addons/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Icon sprite -->
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-cube" viewBox="0 0 24 24">
+        <path d="M12 2.6 21 7.5v9L12 21.4 3 16.5v-9L12 2.6Z" />
+        <path d="m3.3 7.4 8.7 4.8 8.7-4.8M12 12.2v9" />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="m16 16 4.5 4.5" />
+      </symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24">
+        <path d="M20 11a8 8 0 1 0-2.3 6.3" />
+        <path d="M20 4v7h-7" />
+      </symbol>
+      <symbol id="i-wire" viewBox="0 0 24 24">
+        <path d="M12 2.8 21 7.7v8.6l-9 4.9-9-4.9V7.7l9-4.9Z" />
+        <path d="M3.4 7.7 12 12.4l8.6-4.7M12 12.4V21M7.7 5.2l8.6 4.7v9.2" />
+      </symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24">
+        <path d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18" />
+      </symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24">
+        <path d="M4 10V4h6M20 14v6h-6" />
+        <path d="M4.5 8.5A8.5 8.5 0 0 1 19 6M19.5 15.5A8.5 8.5 0 0 1 5 18" />
+      </symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24">
+        <path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5" />
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M12 3v12M7 10l5 5 5-5M4 19v2h16v-2" />
+      </symbol>
+      <symbol id="i-play" viewBox="0 0 24 24">
+        <path d="M7 4.5 19.5 12 7 19.5v-15Z" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24">
+        <path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24">
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M18 6 6 18" />
+      </symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24">
+        <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+      </symbol>
+      <symbol id="i-mouse" viewBox="0 0 24 24">
+        <rect x="7" y="2.5" width="10" height="19" rx="5" />
+        <path d="M12 6v3" />
+      </symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24">
+        <path d="m8 10 4 4 4-4" />
+      </symbol>
+    </svg>
+
+    <div class="app" id="app">
+      <aside class="sidebar" id="sidebar">
+        <header class="brand">
+          <div class="brand-mark">
+            <svg><use href="#i-cube" /></svg>
+          </div>
+          <div class="brand-text">
+            <h1>Model Vault</h1>
+            <p><span id="assetCount">21</span> GLB assets · local</p>
+          </div>
+          <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close library">
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </header>
+
+        <div class="search-wrap">
+          <svg class="search-icon"><use href="#i-search" /></svg>
+          <input
+            id="search"
+            type="search"
+            placeholder="Search models…"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search models"
+          />
+          <kbd>/</kbd>
+        </div>
+
+        <div class="filters" id="filters" role="tablist" aria-label="Filter by category"></div>
+
+        <div class="list-head">
+          <span id="resultLabel">All assets</span>
+          <span class="list-count" id="resultCount"></span>
+        </div>
+
+        <div class="model-list" id="modelList"></div>
+
+        <footer class="sidebar-foot">
+          <div class="drop-hint">
+            <svg><use href="#i-upload" /></svg>
+            <span>Drop a <b>.glb</b> anywhere to preview it</span>
+          </div>
+          <a class="repo-link" href="README.md" target="_blank" rel="noreferrer">Viewer guide</a>
+        </footer>
+      </aside>
+
+      <div class="scrim" id="scrim"></div>
+
+      <main class="stage" id="stage">
+        <div class="backdrop"></div>
+        <canvas id="canvas" aria-label="3D model viewport"></canvas>
+
+        <div class="topbar">
+          <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open library">
+            <svg><use href="#i-menu" /></svg>
+          </button>
+          <div class="model-heading">
+            <div class="eyebrow">
+              <span id="modelCategory">Vehicles</span>
+              <span class="dot"></span>
+              <span id="modelFile" class="mono">model.glb</span>
+            </div>
+            <h2 id="modelName">Loading…</h2>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="toolbar" role="toolbar" aria-label="Viewer controls">
+            <button class="icon-btn" id="btnReset" data-tip="Frame model (F)" aria-label="Frame model">
+              <svg><use href="#i-reset" /></svg>
+            </button>
+            <button class="icon-btn" id="btnRotate" data-tip="Auto-rotate (R)" aria-label="Toggle auto-rotate" aria-pressed="false">
+              <svg><use href="#i-rotate" /></svg>
+            </button>
+            <button class="icon-btn" id="btnWire" data-tip="Wireframe (W)" aria-label="Toggle wireframe" aria-pressed="false">
+              <svg><use href="#i-wire" /></svg>
+            </button>
+            <button class="icon-btn" id="btnGrid" data-tip="Ground grid (G)" aria-label="Toggle grid" aria-pressed="true">
+              <svg><use href="#i-grid" /></svg>
+            </button>
+            <span class="toolbar-divider"></span>
+            <button class="icon-btn" id="btnDownload" data-tip="Download GLB" aria-label="Download model">
+              <svg><use href="#i-download" /></svg>
+            </button>
+            <button class="icon-btn" id="btnFull" data-tip="Fullscreen" aria-label="Toggle fullscreen">
+              <svg><use href="#i-expand" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="stats glass" id="stats" hidden>
+          <div class="stats-head">
+            <span>Mesh statistics</span>
+            <span class="live-dot" title="Rendered live"></span>
+          </div>
+          <dl class="stats-grid">
+            <div><dt>Triangles</dt><dd id="statTris">—</dd></div>
+            <div><dt>Vertices</dt><dd id="statVerts">—</dd></div>
+            <div><dt>Meshes</dt><dd id="statMeshes">—</dd></div>
+            <div><dt>Materials</dt><dd id="statMats">—</dd></div>
+            <div><dt>Textures</dt><dd id="statTex">—</dd></div>
+            <div><dt>Bones</dt><dd id="statBones">—</dd></div>
+            <div><dt>File size</dt><dd id="statSize">—</dd></div>
+            <div><dt>Clips</dt><dd id="statClips">—</dd></div>
+          </dl>
+        </div>
+
+        <div class="anim-panel glass" id="animPanel" hidden>
+          <div class="anim-top">
+            <button class="play-btn" id="btnPlay" aria-label="Pause animation">
+              <svg class="icon-play"><use href="#i-play" /></svg>
+              <svg class="icon-pause"><use href="#i-pause" /></svg>
+            </button>
+            <div class="anim-meta">
+              <span class="anim-label">Animation</span>
+              <div class="anim-select-wrap" id="clipWrap">
+                <select id="clipSelect" aria-label="Animation clip"></select>
+                <svg class="chev"><use href="#i-chevron" /></svg>
+              </div>
+            </div>
+            <label class="speed">
+              <span>Speed</span>
+              <select id="speedSelect" aria-label="Playback speed">
+                <option value="0.25">0.25×</option>
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+          <div class="anim-track">
+            <span id="timeNow" class="mono">0.00</span>
+            <input id="timeline" type="range" min="0" max="1000" value="0" step="1" aria-label="Animation timeline" />
+            <span id="timeTotal" class="mono">0.00</span>
+          </div>
+        </div>
+
+        <div class="hint" id="hint">
+          <svg><use href="#i-mouse" /></svg>
+          <span><b>Drag</b> to orbit · <b>Scroll</b> to zoom · <b>Right-drag</b> to pan</span>
+        </div>
+
+        <div class="loader" id="loader">
+          <div class="loader-card">
+            <div class="ring"><span id="loadPct">0</span></div>
+            <div class="loader-text">
+              <strong id="loadTitle">Loading model</strong>
+              <span id="loadFile" class="mono">model.glb</span>
+            </div>
+            <div class="load-bar"><i id="loadBar"></i></div>
+          </div>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-card">
+            <svg><use href="#i-upload" /></svg>
+            <strong>Drop to preview</strong>
+            <span>Release a .glb file to load it locally</span>
+          </div>
+        </div>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

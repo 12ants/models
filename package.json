@@ -1,0 +1,30 @@
+{
+  "name": "model-vault",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A local 3D viewer for every GLB asset in the repository",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "thumbs": "node scripts/render-thumbs.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/12ants/models.git"
+  },
+  "keywords": [
+    "glb",
+    "gltf",
+    "three.js",
+    "3d",
+    "viewer"
+  ],
+  "homepage": "https://github.com/12ants/models#readme",
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.0"
+  }
+}
